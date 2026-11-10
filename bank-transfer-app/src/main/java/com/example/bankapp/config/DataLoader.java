@@ -4,6 +4,7 @@ import com.example.bankapp.model.Customer;
 import com.example.bankapp.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -14,9 +15,17 @@ import java.math.BigDecimal;
 public class DataLoader implements CommandLineRunner {
 
     private final CustomerRepository customerRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE bank_transactions MODIFY COLUMN from_account VARCHAR(255) NULL");
+            jdbcTemplate.execute("ALTER TABLE bank_transactions MODIFY COLUMN to_account VARCHAR(255) NULL");
+        } catch (Exception ignored) {
+            // Ignored if table doesn't exist yet or DB does not support this syntax
+        }
+
         if (customerRepository.count() > 0) {
             return;
         }

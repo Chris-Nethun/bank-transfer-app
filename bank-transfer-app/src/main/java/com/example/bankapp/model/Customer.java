@@ -52,4 +52,20 @@ public class Customer {
     @Digits(integer = 12, fraction = 2, message = "Balance must have at most 2 decimal places")
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public void credit(BigDecimal amount) {
+        balance = balance.add(amount);
+    }
+
+    public void debit(BigDecimal amount) {
+        balance = balance.subtract(amount);
+    }
 }

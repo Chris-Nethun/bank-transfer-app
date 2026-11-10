@@ -99,56 +99,47 @@ public class BankService {
         return customerRepository.save(customer);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BankTransaction deposit(String accountNumber, BigDecimal amount) {
-        Customer customer = findCustomerByAccountNumber(accountNumber)
-                .orElseThrow(() -> new AccountNotFoundException(accountNumber));
-
+        validateAccountNumber(accountNumber);
         validatePositiveAmount(amount);
 
-        customer.setBalance(customer.getBalance().add(amount));
-        customerRepository.save(customer);
+        if (customerRepository.creditBalance(accountNumber, amount) == 0) {
+            throw new AccountNotFoundException(accountNumber);
+        }
 
         return saveTransaction(null, accountNumber, amount, TransactionStatus.SUCCESS,
                 "Deposit completed");
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BankTransaction withdraw(String accountNumber, BigDecimal amount) {
-        Customer customer = findCustomerByAccountNumber(accountNumber)
-                .orElseThrow(() -> new AccountNotFoundException(accountNumber));
-
+        validateAccountNumber(accountNumber);
         validatePositiveAmount(amount);
 
-        if (customer.getBalance().compareTo(amount) < 0) {
+        if (customerRepository.debitBalance(accountNumber, amount) == 0) {
+            if (!customerRepository.existsByAccountNumber(accountNumber)) {
+                throw new AccountNotFoundException(accountNumber);
+            }
             throw new InsufficientBalanceException(accountNumber);
         }
-
-        customer.setBalance(customer.getBalance().subtract(amount));
-        customerRepository.save(customer);
 
         return saveTransaction(accountNumber, null, amount, TransactionStatus.SUCCESS,
                 "Withdrawal completed");
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BankTransaction transfer(String fromAccount, String toAccount, BigDecimal amount, boolean simulateFailure) {
         validateTransferAccounts(fromAccount, toAccount);
         validatePositiveAmount(amount);
 
-        Customer sender = findCustomerByAccountNumber(fromAccount)
-                .orElseThrow(() -> new AccountNotFoundException(fromAccount));
-        Customer receiver = findCustomerByAccountNumber(toAccount)
-                .orElseThrow(() -> new AccountNotFoundException(toAccount));
-
-        if (sender.getBalance().compareTo(amount) < 0) {
-            throw new InsufficientBalanceException(fromAccount);
-        }
-
         BigDecimal fee = amount.multiply(TRANSFER_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalDebited = amount.add(fee);
 
-        if (sender.getBalance().compareTo(totalDebited) < 0) {
+        if (customerRepository.debitBalance(fromAccount, totalDebited) == 0) {
+            if (!customerRepository.existsByAccountNumber(fromAccount)) {
+                throw new AccountNotFoundException(fromAccount);
+            }
             throw new InsufficientBalanceException(fromAccount);
         }
 
@@ -156,17 +147,12 @@ public class BankService {
             throw new BankException("Simulated system failure after withdrawal");
         }
 
-        sender.setBalance(sender.getBalance().subtract(totalDebited));
-        receiver.setBalance(receiver.getBalance().add(amount));
-
-        Customer bankAccount = findCustomerByAccountNumber(BANK_ACCOUNT_NUMBER)
-                .orElseThrow(() -> new AccountNotFoundException(BANK_ACCOUNT_NUMBER));
-        bankAccount.setBalance(bankAccount.getBalance().add(fee));
-
-        customerRepository.saveAll(List.of(sender, receiver, bankAccount));
-
-        saveTransaction(fromAccount, toAccount, amount, TransactionStatus.SUCCESS,
-                "Transfer completed. Fee: " + fee);
+        if (customerRepository.creditBalance(toAccount, amount) == 0) {
+            throw new AccountNotFoundException(toAccount);
+        }
+        if (fee.signum() > 0 && customerRepository.creditBalance(BANK_ACCOUNT_NUMBER, fee) == 0) {
+            throw new AccountNotFoundException(BANK_ACCOUNT_NUMBER);
+        }
 
         BankTransaction transaction = saveTransaction(fromAccount, toAccount, amount, TransactionStatus.SUCCESS,
                 "Transfer completed. Fee: " + fee);
@@ -191,6 +177,12 @@ public class BankService {
         }
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BankException("Amount must be greater than zero");
+        }
+    }
+
+    private void validateAccountNumber(String accountNumber) {
+        if (accountNumber == null || accountNumber.isBlank()) {
+            throw new BankException("Account number is required");
         }
     }
 

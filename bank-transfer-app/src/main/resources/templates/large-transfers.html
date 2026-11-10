@@ -27,7 +27,7 @@
     <section class="card">
         <h2>Filter Transfers</h2>
 
-        <form th:action="@{/large-transfers}" method="get" class="search">
+        <form th:action="@{/large-transfers}" method="get" class="search transfer-search">
             <div class="field">
                 <label for="min">Minimum Amount (LKR)</label>
                 <input
@@ -45,7 +45,7 @@
                 Search Transfers
             </button>
 
-            <a th:href="@{/large-transfers(min=10000)}" class="btn small">
+            <a th:href="@{/large-transfers(min=10000)}" class="btn primary">
                 Reset
             </a>
         </form>

@@ -29,7 +29,7 @@ input, select { width: 100%; padding: 10px; border: 1px solid #cfc7e3; border-ra
 input:focus, select:focus { outline: 2px solid var(--primary); }
 .error { color: var(--danger); display: block; margin-top: 3px; }
 
-.btn { display: inline-block; padding: 9px 20px; border-radius: 8px; border: 1px solid #cfc7e3; background: #fff; color: var(--dark); text-decoration: none; cursor: pointer; font: inherit; }
+.btn { display: inline-block; padding: 9px 10px; border-radius: 8px; border: 1px solid #cfc7e3; background: #fff; color: var(--dark); text-decoration: none; cursor: pointer; font: inherit; }
 .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 .btn.small { padding: 5px 14px; font-size: .9rem; }
 .btn:hover { opacity: .88; }
@@ -40,6 +40,21 @@ input:focus, select:focus { outline: 2px solid var(--primary); }
 
 .search { display: flex; gap: 8px; margin-bottom: 14px; }
 .search input { max-width: 280px; }
+.transfer-search { align-items: flex-end; }
+.transfer-search .field { flex: 1; margin-bottom: 0; }
+.transfer-search .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+    .transfer-search { flex-wrap: wrap; }
+    .transfer-search .field { flex-basis: 100%; }
+    .transfer-search .btn { flex: 1; }
+}
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }

@@ -18,9 +18,9 @@ public class TransactionAuditService {
     private final BankTransactionRepository bankTransactionRepository;
 
     /**
-     * Saves a FAILED record after a transfer was rolled back.
+     * Saves a FAILED record after an account operation was rolled back.
      * REQUIRES_NEW = always start a brand-new, independent transaction,
-     * so this record is committed even though the transfer itself was rolled back.
+     * so this record is committed even though the account operation was rolled back.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordFailure(String fromAccount, String toAccount, BigDecimal amount, String message) {
@@ -29,7 +29,7 @@ public class TransactionAuditService {
         transaction.setToAccount(toAccount);
         transaction.setAmount(amount == null ? BigDecimal.ZERO : amount);
         transaction.setStatus(TransactionStatus.FAILED);
-        transaction.setDescription(message == null ? "Transfer failed and was rolled back." : message);
+        transaction.setDescription(message == null ? "Account operation failed and was rolled back." : message);
         transaction.setCreatedAt(LocalDateTime.now());
         bankTransactionRepository.save(transaction);
     }

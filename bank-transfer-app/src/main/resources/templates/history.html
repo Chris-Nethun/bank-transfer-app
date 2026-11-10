@@ -36,8 +36,8 @@
           <tr th:each="t : ${transactions}">
             <td th:text="${t.id}"></td>
             <td th:text="${#temporals.format(t.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></td>
-            <td th:text="${t.fromAccount}"></td>
-            <td th:text="${t.toAccount}"></td>
+            <td th:text="${t.fromAccount != null ? t.fromAccount : '-'}"></td>
+            <td th:text="${t.toAccount != null ? t.toAccount : '-'}"></td>
             <td class="num" th:text="${#numbers.formatDecimal(t.amount, 1, 'COMMA', 2, 'POINT')}"></td>
             <td><span class="tag" th:classappend="${t.status.name() == 'SUCCESS'} ? 'ok' : 'fail'" th:text="${t.status}"></span></td>
             <td th:text="${t.description}"></td>

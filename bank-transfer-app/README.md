@@ -4,7 +4,9 @@ Spring Boot + Thymeleaf + Spring Data JPA + MySQL + Lombok.
 
 Demonstrates:
 * `@Transactional` - a money transfer between two customers either fully succeeds or is fully rolled back
-* `@Query` - JPQL, native SQL and UPDATE queries written in the repository interfaces
+* Conditional JPQL balance updates - withdrawals debit only when sufficient funds exist, while deposits and transfer credits are applied atomically
+* Failed transfer auditing in a separate `REQUIRES_NEW` transaction, so failure records survive a transfer rollback
+* `@Query` - JPQL and UPDATE queries written in the repository interfaces
 
 ## Run
 1. Start MySQL (XAMPP -> MySQL -> Start). The database `bank_db` is created automatically.

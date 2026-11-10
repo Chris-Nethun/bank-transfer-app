@@ -111,18 +111,23 @@ public class BankController {
 
     @PostMapping("/deposit")
     public String deposit(
-            @RequestParam String accountNumber,
-            @RequestParam BigDecimal amount,
+            @RequestParam(required = false) String accountNumber,
+            @RequestParam(required = false) String amount,
             RedirectAttributes redirectAttributes,
             Model model
     ) {
+        BigDecimal parsedAmount = null;
         try {
-            bankService.deposit(accountNumber, amount);
+            parsedAmount = parseAmount(amount);
+            bankService.deposit(accountNumber, parsedAmount);
             redirectAttributes.addFlashAttribute("success", "Deposit completed successfully.");
             return "redirect:/deposit";
         } catch (Exception e) {
+            transactionAuditService.recordFailure(null, accountNumber, parsedAmount, e.getMessage());
             model.addAttribute("error", e.getMessage());
             model.addAttribute("customers", bankService.getAllCustomers());
+            model.addAttribute("accountNumber", accountNumber);
+            model.addAttribute("amount", amount);
             return "deposit";
         }
     }
@@ -135,19 +140,35 @@ public class BankController {
 
     @PostMapping("/withdraw")
     public String withdraw(
-            @RequestParam String accountNumber,
-            @RequestParam BigDecimal amount,
+            @RequestParam(required = false) String accountNumber,
+            @RequestParam(required = false) String amount,
             RedirectAttributes redirectAttributes,
             Model model
     ) {
+        BigDecimal parsedAmount = null;
         try {
-            bankService.withdraw(accountNumber, amount);
+            parsedAmount = parseAmount(amount);
+            bankService.withdraw(accountNumber, parsedAmount);
             redirectAttributes.addFlashAttribute("success", "Withdrawal completed successfully.");
             return "redirect:/withdraw";
         } catch (Exception e) {
+            transactionAuditService.recordFailure(accountNumber, null, parsedAmount, e.getMessage());
             model.addAttribute("error", e.getMessage());
             model.addAttribute("customers", bankService.getAllCustomers());
+            model.addAttribute("accountNumber", accountNumber);
+            model.addAttribute("amount", amount);
             return "withdraw";
+        }
+    }
+
+    private BigDecimal parseAmount(String amount) {
+        if (amount == null || amount.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(amount.trim());
+        } catch (NumberFormatException e) {
+            throw new BankException("Amount must be a valid number");
         }
     }
 
