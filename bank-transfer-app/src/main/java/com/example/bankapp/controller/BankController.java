@@ -35,10 +35,10 @@ public class BankController {
     ) {
         List<Customer> customers = bankService.searchCustomers(keyword);
         model.addAttribute("customers", customers);
-        model.addAttribute("allCustomers", customers);
+        model.addAttribute("allCustomers", bankService.getAllCustomers());
         model.addAttribute("transferRequest", new TransferRequest());
         model.addAttribute("customer", new Customer());
-        model.addAttribute("totalCustomers", customers.size());
+        model.addAttribute("totalCustomers", bankService.getTotalCustomers());
         model.addAttribute("totalBalance", bankService.getTotalBalance());
         model.addAttribute("successCount", bankService.getSuccessCount());
         model.addAttribute("failedCount", bankService.getFailedCount());
@@ -203,7 +203,7 @@ public class BankController {
         model.addAttribute("allCustomers", allCustomers);
         model.addAttribute("customer", customer == null ? new Customer() : customer);
         model.addAttribute("transferRequest", transferRequest == null ? new TransferRequest() : transferRequest);
-        model.addAttribute("totalCustomers", allCustomers.size());
+        model.addAttribute("totalCustomers", bankService.getTotalCustomers());
         model.addAttribute("totalBalance", bankService.getTotalBalance());
         model.addAttribute("successCount", bankService.getSuccessCount());
         model.addAttribute("failedCount", bankService.getFailedCount());

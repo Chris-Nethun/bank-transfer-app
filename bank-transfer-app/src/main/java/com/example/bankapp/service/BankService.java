@@ -30,7 +30,7 @@ public class BankService {
     private final BankTransactionRepository bankTransactionRepository;
 
     public List<Customer> getAllCustomers() {
-        return customerRepository.findAllByOrderByFullNameAsc();
+        return customerRepository.findAllOrdered();
     }
 
     public List<Customer> searchCustomers(String keyword) {
@@ -39,7 +39,7 @@ public class BankService {
         }
 
         String term = keyword.trim().toLowerCase();
-        return customerRepository.findAllByOrderByFullNameAsc().stream()
+        return customerRepository.findAllOrdered().stream()
                 .filter(c -> c.getFullName().toLowerCase().contains(term)
                         || c.getEmail().toLowerCase().contains(term)
                         || c.getAccountNumber().contains(term))
@@ -47,20 +47,22 @@ public class BankService {
     }
 
     public List<BankTransaction> getLatestTransactions() {
-        return bankTransactionRepository.findAll().stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+        return bankTransactionRepository.findAllLatest().stream()
                 .limit(20)
                 .toList();
     }
 
     public Optional<Customer> findCustomerByAccountNumber(String accountNumber) {
-        return customerRepository.findByAccountNumber(accountNumber);
+        return customerRepository.getByAccountNumber(accountNumber);
     }
 
     public BigDecimal getTotalBalance() {
-        return customerRepository.findAll().stream()
-                .map(Customer::getBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = customerRepository.getTotalBalance();
+        return total == null ? BigDecimal.ZERO : total;
+    }
+
+    public long getTotalCustomers() {
+        return customerRepository.countCustomersNative();
     }
 
     public long getSuccessCount() {
@@ -72,7 +74,7 @@ public class BankService {
     }
 
     public List<BankTransaction> getHistoryForAccount(String accountNumber) {
-        return bankTransactionRepository.findByFromAccountOrToAccountOrderByCreatedAtDesc(accountNumber, accountNumber);
+        return bankTransactionRepository.findHistory(accountNumber);
     }
 
     public List<BankTransaction> getLargeTransfers(BigDecimal minAmount) {
@@ -90,10 +92,10 @@ public class BankService {
         if (customer == null) {
             throw new BankException("Customer data is required");
         }
-        if (customerRepository.existsByEmail(customer.getEmail())) {
+        if (customerRepository.countEmails(customer.getEmail()) > 0) {
             throw new BankException("Email already exists");
         }
-        if (customerRepository.existsByAccountNumber(customer.getAccountNumber())) {
+        if (customerRepository.countAccounts(customer.getAccountNumber()) > 0) {
             throw new BankException("Account number already exists");
         }
         return customerRepository.save(customer);
@@ -104,7 +106,7 @@ public class BankService {
         validateAccountNumber(accountNumber);
         validatePositiveAmount(amount);
 
-        if (customerRepository.creditBalance(accountNumber, amount) == 0) {
+        if (customerRepository.credit(accountNumber, amount) == 0) {
             throw new AccountNotFoundException(accountNumber);
         }
 
@@ -117,8 +119,8 @@ public class BankService {
         validateAccountNumber(accountNumber);
         validatePositiveAmount(amount);
 
-        if (customerRepository.debitBalance(accountNumber, amount) == 0) {
-            if (!customerRepository.existsByAccountNumber(accountNumber)) {
+        if (customerRepository.debit(accountNumber, amount) == 0) {
+            if (customerRepository.countAccounts(accountNumber) == 0) {
                 throw new AccountNotFoundException(accountNumber);
             }
             throw new InsufficientBalanceException(accountNumber);
@@ -136,8 +138,8 @@ public class BankService {
         BigDecimal fee = amount.multiply(TRANSFER_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalDebited = amount.add(fee);
 
-        if (customerRepository.debitBalance(fromAccount, totalDebited) == 0) {
-            if (!customerRepository.existsByAccountNumber(fromAccount)) {
+        if (customerRepository.debit(fromAccount, totalDebited) == 0) {
+            if (customerRepository.countAccounts(fromAccount) == 0) {
                 throw new AccountNotFoundException(fromAccount);
             }
             throw new InsufficientBalanceException(fromAccount);
@@ -147,10 +149,10 @@ public class BankService {
             throw new BankException("Simulated system failure after withdrawal");
         }
 
-        if (customerRepository.creditBalance(toAccount, amount) == 0) {
+        if (customerRepository.credit(toAccount, amount) == 0) {
             throw new AccountNotFoundException(toAccount);
         }
-        if (fee.signum() > 0 && customerRepository.creditBalance(BANK_ACCOUNT_NUMBER, fee) == 0) {
+        if (fee.signum() > 0 && customerRepository.credit(BANK_ACCOUNT_NUMBER, fee) == 0) {
             throw new AccountNotFoundException(BANK_ACCOUNT_NUMBER);
         }
 
