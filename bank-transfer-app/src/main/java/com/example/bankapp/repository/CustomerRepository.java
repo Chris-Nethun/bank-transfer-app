@@ -12,11 +12,26 @@ import java.util.Optional;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
-    Optional<Customer> findByAccountNumber(String accountNumber);
+    @Query("SELECT c FROM Customer c WHERE c.accountNumber = :accountNumber")
+    Optional<Customer> getByAccountNumber(@Param("accountNumber") String accountNumber);
 
-    boolean existsByAccountNumber(String accountNumber);
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.accountNumber = :accountNumber")
+    long countAccounts(@Param("accountNumber") String accountNumber);
 
-    boolean existsByEmail(String email);
+    @Query("SELECT COUNT(c) FROM Customer c WHERE c.email = :email")
+    long countEmails(@Param("email") String email);
+
+    @Query("SELECT c FROM Customer c ORDER BY c.fullName ASC")
+    List<Customer> findAllOrdered();
+
+    @Query("SELECT c FROM Customer c WHERE LOWER(c.fullName) LIKE LOWER(CONCAT('%', :name, '%')) ORDER BY c.fullName ASC")
+    List<Customer> searchByName(@Param("name") String name);
+
+    @Query("SELECT SUM(c.balance) FROM Customer c")
+    BigDecimal getTotalBalance();
+
+    @Query(value = "SELECT COUNT(*) FROM customers", nativeQuery = true)
+    long countCustomersNative();
 
     @Modifying
     @Query("""
@@ -25,7 +40,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             WHERE c.accountNumber = :accountNumber
               AND c.balance >= :amount
             """)
-    int debitBalance(@Param("accountNumber") String accountNumber, @Param("amount") BigDecimal amount);
+    int debit(@Param("accountNumber") String accountNumber, @Param("amount") BigDecimal amount);
 
     @Modifying
     @Query("""
@@ -33,8 +48,5 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             SET c.balance = c.balance + :amount
             WHERE c.accountNumber = :accountNumber
             """)
-    int creditBalance(@Param("accountNumber") String accountNumber, @Param("amount") BigDecimal amount);
-
-    @Query("SELECT c FROM Customer c ORDER BY c.fullName ASC")
-    List<Customer> findAllByOrderByFullNameAsc();
+    int credit(@Param("accountNumber") String accountNumber, @Param("amount") BigDecimal amount);
 }

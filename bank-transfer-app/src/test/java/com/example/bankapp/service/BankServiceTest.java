@@ -26,9 +26,9 @@ class BankServiceTest {
         CustomerRepository customerRepository = mock(CustomerRepository.class);
         BankTransactionRepository bankTransactionRepository = mock(BankTransactionRepository.class);
 
-        when(customerRepository.debitBalance("100001", new BigDecimal("1010.00"))).thenReturn(1);
-        when(customerRepository.creditBalance("100002", new BigDecimal("1000.00"))).thenReturn(1);
-        when(customerRepository.creditBalance("999999", new BigDecimal("10.00"))).thenReturn(1);
+        when(customerRepository.debit("100001", new BigDecimal("1010.00"))).thenReturn(1);
+        when(customerRepository.credit("100002", new BigDecimal("1000.00"))).thenReturn(1);
+        when(customerRepository.credit("999999", new BigDecimal("10.00"))).thenReturn(1);
         when(bankTransactionRepository.save(any(BankTransaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -39,9 +39,9 @@ class BankServiceTest {
 
         assertNotNull(transaction);
         assertEquals(TransactionStatus.SUCCESS, transaction.getStatus());
-        verify(customerRepository).debitBalance("100001", new BigDecimal("1010.00"));
-        verify(customerRepository).creditBalance("100002", new BigDecimal("1000.00"));
-        verify(customerRepository).creditBalance("999999", new BigDecimal("10.00"));
+        verify(customerRepository).debit("100001", new BigDecimal("1010.00"));
+        verify(customerRepository).credit("100002", new BigDecimal("1000.00"));
+        verify(customerRepository).credit("999999", new BigDecimal("10.00"));
         verify(bankTransactionRepository, times(1)).save(any(BankTransaction.class));
     }
 
@@ -50,7 +50,7 @@ class BankServiceTest {
         CustomerRepository customerRepository = mock(CustomerRepository.class);
         BankTransactionRepository bankTransactionRepository = mock(BankTransactionRepository.class);
 
-        when(customerRepository.debitBalance("100001", new BigDecimal("1000.00"))).thenReturn(1);
+        when(customerRepository.debit("100001", new BigDecimal("1000.00"))).thenReturn(1);
         when(bankTransactionRepository.save(any(BankTransaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -63,7 +63,7 @@ class BankServiceTest {
         assertNull(transaction.getToAccount());
         assertEquals(TransactionStatus.SUCCESS, transaction.getStatus());
         assertEquals("Withdrawal completed", transaction.getDescription());
-        verify(customerRepository).debitBalance("100001", new BigDecimal("1000.00"));
+        verify(customerRepository).debit("100001", new BigDecimal("1000.00"));
         verify(bankTransactionRepository, times(1)).save(any(BankTransaction.class));
     }
 
@@ -72,7 +72,7 @@ class BankServiceTest {
         CustomerRepository customerRepository = mock(CustomerRepository.class);
         BankTransactionRepository bankTransactionRepository = mock(BankTransactionRepository.class);
 
-        when(customerRepository.creditBalance("100001", new BigDecimal("1000.00"))).thenReturn(1);
+        when(customerRepository.credit("100001", new BigDecimal("1000.00"))).thenReturn(1);
         when(bankTransactionRepository.save(any(BankTransaction.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -85,7 +85,7 @@ class BankServiceTest {
         assertEquals("100001", transaction.getToAccount());
         assertEquals(TransactionStatus.SUCCESS, transaction.getStatus());
         assertEquals("Deposit completed", transaction.getDescription());
-        verify(customerRepository).creditBalance("100001", new BigDecimal("1000.00"));
+        verify(customerRepository).credit("100001", new BigDecimal("1000.00"));
         verify(bankTransactionRepository, times(1)).save(any(BankTransaction.class));
     }
 
@@ -93,8 +93,8 @@ class BankServiceTest {
     void withdrawalRejectsInsufficientBalanceWithoutSavingTransaction() {
         CustomerRepository customerRepository = mock(CustomerRepository.class);
         BankTransactionRepository bankTransactionRepository = mock(BankTransactionRepository.class);
-        when(customerRepository.debitBalance("100001", new BigDecimal("1000.00"))).thenReturn(0);
-        when(customerRepository.existsByAccountNumber("100001")).thenReturn(true);
+        when(customerRepository.debit("100001", new BigDecimal("1000.00"))).thenReturn(0);
+        when(customerRepository.countAccounts("100001")).thenReturn(1L);
 
         BankService bankService = new BankService(customerRepository, bankTransactionRepository);
 

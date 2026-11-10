@@ -3,6 +3,8 @@ package com.example.bankapp.repository;
 import com.example.bankapp.model.BankTransaction;
 import com.example.bankapp.model.TransactionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,15 +12,20 @@ import java.util.List;
 public interface BankTransactionRepository
         extends JpaRepository<BankTransaction, Long> {
 
-    long countByStatus(TransactionStatus status);
+    @Query("SELECT t FROM BankTransaction t ORDER BY t.createdAt DESC")
+    List<BankTransaction> findAllLatest();
+
+    @Query("SELECT t FROM BankTransaction t WHERE t.fromAccount = :accountNumber OR t.toAccount = :accountNumber ORDER BY t.createdAt DESC")
+    List<BankTransaction> findHistory(@Param("accountNumber") String accountNumber);
+
+    @Query("SELECT t FROM BankTransaction t WHERE t.status = :status ORDER BY t.createdAt DESC")
+    List<BankTransaction> findByStatusLatest(@Param("status") TransactionStatus status);
+
+    @Query("SELECT COUNT(t) FROM BankTransaction t WHERE t.status = :status")
+    long countByStatus(@Param("status") TransactionStatus status);
 
     List<BankTransaction> findByStatusAndAmountGreaterThanOrderByCreatedAtDesc(
             TransactionStatus status,
             BigDecimal minAmount
-    );
-
-    List<BankTransaction> findByFromAccountOrToAccountOrderByCreatedAtDesc(
-            String fromAccount,
-            String toAccount
     );
 }
